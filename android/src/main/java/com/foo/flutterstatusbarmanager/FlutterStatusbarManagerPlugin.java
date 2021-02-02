@@ -7,7 +7,9 @@ import android.annotation.TargetApi;
 import android.os.Build;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import androidx.core.view.ViewCompat;
 
@@ -16,6 +18,10 @@ import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
+
+import static android.view.View.SYSTEM_UI_FLAG_IMMERSIVE;
+import static android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+import static android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
 
 /**
  * FlutterStatusbarManagerPlugin
@@ -62,6 +68,9 @@ public class FlutterStatusbarManagerPlugin implements MethodCallHandler {
                 break;
             case "setNavigationBarStyle":
                 handleSetNavigationBarStyle(call, result);
+                break;
+            case "setFullscreen":
+                handleSetFullscreen(call, result);
                 break;
             default:
                 result.notImplemented();
@@ -150,13 +159,55 @@ public class FlutterStatusbarManagerPlugin implements MethodCallHandler {
         }
 
         final boolean hidden = call.argument("hidden");
+        Window window = activity.getWindow();
         if (hidden) {
-            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-            activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+            window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            window.clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                WindowManager.LayoutParams layoutParams = window.getAttributes();
+                layoutParams.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+                window.setAttributes(layoutParams);
+            }
         } else {
-            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
-            activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            window.addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+            window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         }
+        result.success(true);
+    }
+
+    private void handleSetFullscreen(MethodCall call, Result result) {
+        if (activity == null) {
+            Log.e("FlutterStatusbarManager", "FlutterStatusbarManager: Ignored status bar change, current activity is null.");
+            result.error("FlutterStatusbarManager", "FlutterStatusbarManager: Ignored status bar change, current activity is null.", null);
+            return;
+        }
+        final boolean hidden = call.argument("hidden");
+        Window window = activity.getWindow();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R){
+            WindowInsetsController insetsController = window.getInsetsController();
+            assert insetsController != null;
+            if(hidden){
+                insetsController.hide(WindowInsets.Type.statusBars());
+                insetsController.hide(WindowInsets.Type.navigationBars());
+            }else {
+                insetsController.show(WindowInsets.Type.statusBars());
+                insetsController.show(WindowInsets.Type.navigationBars());
+            }
+        }
+        int flag = (SYSTEM_UI_FLAG_LAYOUT_STABLE | SYSTEM_UI_FLAG_IMMERSIVE | SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            boolean inMultiWindowMode = activity.isInMultiWindowMode();
+            if(!inMultiWindowMode){
+                flag = flag | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
+            }
+        }
+        flag = flag | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+        if(hidden){
+            flag = flag | View.SYSTEM_UI_FLAG_FULLSCREEN;
+            flag = flag | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+        }
+        handleSetHidden(call,result);
+        window.getDecorView().setSystemUiVisibility(flag);
         result.success(true);
     }
 

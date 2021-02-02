@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -67,7 +68,7 @@ class _NavigationBarStyle {
 
 class FlutterStatusbarManager {
   static const MethodChannel _channel =
-      const MethodChannel('flutter_statusbar_manager');
+  const MethodChannel('flutter_statusbar_manager');
 
   static Future<bool> setColor(Color color, {bool animated = false}) async {
     return await _channel
@@ -112,11 +113,20 @@ class FlutterStatusbarManager {
     return await _channel.invokeMethod("getHeight");
   }
 
-  static setFullscreen(bool value) {
-    if (value) {
-      SystemChrome.setEnabledSystemUIOverlays([]);
-    } else {
-      SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
+  static void setFullscreen(bool value) async {
+    if(Platform.isAndroid){
+      _channel.invokeMethod("setFullscreen", {
+        'hidden': value,
+      });
+      setNavigationBarColor(Colors.transparent);
+    }else{
+      setHidden(value,
+          animation: StatusBarAnimation.SLIDE);
+      if (value) {
+        SystemChrome.setEnabledSystemUIOverlays([]);
+      } else {
+        SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
+      }
     }
   }
 }
