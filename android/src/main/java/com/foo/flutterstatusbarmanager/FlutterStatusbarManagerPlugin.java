@@ -2,16 +2,24 @@ package com.foo.flutterstatusbarmanager;
 
 import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
+import android.app.ActionBar;
 import android.app.Activity;
 import android.annotation.TargetApi;
+import android.content.Context;
+import android.content.res.Resources;
 import android.os.Build;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
+
 import androidx.core.view.ViewCompat;
+
+import java.lang.reflect.Method;
 
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -21,6 +29,7 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 import static android.view.View.SYSTEM_UI_FLAG_IMMERSIVE;
 import static android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+import static android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
 import static android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
 
 /**
@@ -59,6 +68,9 @@ public class FlutterStatusbarManagerPlugin implements MethodCallHandler {
                 break;
             case "getHeight":
                 handleGetHeight(call, result);
+                break;
+            case "getNavigationHeight":
+                handleNavigationHeight( result);
                 break;
             case "setNetworkActivityIndicatorVisible":
                 result.success(true);
@@ -208,7 +220,6 @@ public class FlutterStatusbarManagerPlugin implements MethodCallHandler {
         }
         handleSetHidden(call,result);
         window.getDecorView().setSystemUiVisibility(flag);
-        result.success(true);
     }
 
     @TargetApi(Build.VERSION_CODES.M)
@@ -246,6 +257,29 @@ public class FlutterStatusbarManagerPlugin implements MethodCallHandler {
         result.success((double) toDIPFromPixel(height));
     }
 
+    boolean isResultHeight = false;
+    public void handleNavigationHeight(final Result result) {
+        if (activity == null) {
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
+            activity.getWindow().getDecorView().setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+                @Override
+                public WindowInsets onApplyWindowInsets(View v, WindowInsets windowInsets) {
+                    if (windowInsets != null) {
+                        int b = windowInsets.getSystemWindowInsetBottom();
+                        if(!isResultHeight){
+                            isResultHeight = true;
+                            result.success((double) toDIPFromPixel(b));
+                        }
+                    }
+                    return windowInsets;
+                }
+            });
+        }
+    }
+
     @TargetApi((Build.VERSION_CODES.LOLLIPOP))
     private void handleSetNavigationBarColor(MethodCall call, Result result) {
         if (activity == null) {
@@ -255,8 +289,7 @@ public class FlutterStatusbarManagerPlugin implements MethodCallHandler {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            @SuppressWarnings("unkchecked")
-            final int color = ((Number) call.argument("color")).intValue();
+            @SuppressWarnings("unkchecked") final int color = ((Number) call.argument("color")).intValue();
             final boolean animated = call.argument("animated");
 
             if (animated) {

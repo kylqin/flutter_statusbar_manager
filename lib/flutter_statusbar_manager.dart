@@ -113,15 +113,18 @@ class FlutterStatusbarManager {
     return await _channel.invokeMethod("getHeight");
   }
 
+  static Future<double> get getNavigationHeight async {
+    return await _channel.invokeMethod("getNavigationHeight");
+  }
+
   static void setFullscreen(bool value) async {
-    if(Platform.isAndroid){
+    if (Platform.isAndroid) {
       _channel.invokeMethod("setFullscreen", {
         'hidden': value,
       });
       setNavigationBarColor(Colors.transparent);
-    }else{
-      setHidden(value,
-          animation: StatusBarAnimation.SLIDE);
+    } else {
+      setHidden(value, animation: StatusBarAnimation.SLIDE);
       if (value) {
         SystemChrome.setEnabledSystemUIOverlays([]);
       } else {
