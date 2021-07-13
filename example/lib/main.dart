@@ -61,11 +61,13 @@ class _MyAppState extends State<MyApp> {
     return Text(text, style: textStyle);
   }
 
-  void colorBarChanged(Color val) {
-    this.setState(() {
-      _statusBarColor = val;
-    });
-    updateStatusBar();
+  void colorBarChanged(Color? val) {
+    if (val != null) {
+      this.setState(() {
+        _statusBarColor = val;
+      });
+      updateStatusBar();
+    }
   }
 
   void updateStatusBar() {
@@ -74,24 +76,30 @@ class _MyAppState extends State<MyApp> {
         animated: _statusBarColorAnimated);
   }
 
-  void statusBarAnimationChanged(StatusBarAnimation val) {
-    this.setState(() {
-      _statusBarAnimation = val;
-    });
+  void statusBarAnimationChanged(StatusBarAnimation? val) {
+    if (val != null) {
+      this.setState(() {
+        _statusBarAnimation = val;
+      });
+    }
   }
 
-  void statusBarStyleChanged(StatusBarStyle val) {
-    this.setState(() {
-      _statusBarStyle = val;
-    });
-    FlutterStatusbarManager.setStyle(val);
+  void statusBarStyleChanged(StatusBarStyle? val) {
+    if (val != null) {
+      this.setState(() {
+        _statusBarStyle = val;
+      });
+      FlutterStatusbarManager.setStyle(val);
+    }
   }
 
-  void colorNavBarChanged(Color val) {
-    this.setState(() {
-      _navBarColor = val;
-    });
-    updateNavBar();
+  void colorNavBarChanged(Color? val) {
+    if (val != null) {
+      this.setState(() {
+        _navBarColor = val;
+      });
+      updateNavBar();
+    }
   }
 
   void updateNavBar() {
@@ -99,11 +107,13 @@ class _MyAppState extends State<MyApp> {
         animated: _navBarColorAnimated);
   }
 
-  void navigationBarStyleChanged(NavigationBarStyle val) {
-    this.setState(() {
-      _navBarStyle = val;
-    });
-    FlutterStatusbarManager.setNavigationBarStyle(val);
+  void navigationBarStyleChanged(NavigationBarStyle? val) {
+    if (val != null) {
+      this.setState(() {
+        _navBarStyle = val;
+      });
+      FlutterStatusbarManager.setNavigationBarStyle(val);
+    }
   }
 
   @override
